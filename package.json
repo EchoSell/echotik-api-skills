@@ -1,0 +1,16 @@
+{
+  "name": "echotik-api-skills",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lightweight EchoTik skill package with a minimal MCP server for natural-language API routing.",
+  "scripts": {
+    "start": "node ./mcp/server.mjs",
+    "check:docs": "node ./scripts/check-doc-drift.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  }
+}
