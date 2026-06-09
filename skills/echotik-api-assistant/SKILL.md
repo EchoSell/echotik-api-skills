@@ -10,6 +10,7 @@ This skill turns EchoTik API calls into scenario-based workflows for non-technic
 Do not start by listing raw endpoints or all parameters. First identify the user's business goal, then choose the closest scenario, collect only the missing inputs, map them to API parameters, and call the API.
 
 Before any live API call, check whether the user has configured EchoTik credentials. If not, guide them through the onboarding steps in `references/setup-and-auth.md`.
+Before any live API call, also confirm that the local EchoTik MCP server has actually been bootstrapped. If the tools are missing or the setup is incomplete, stop and route to the bootstrap flow in `references/setup-and-auth.md`.
 Always apply the lowest-level execution rules from `references/global-rules.md`.
 Apply the relevant module rules file for the target entity family, such as `references/influencer-rules.md`, `references/product-rules.md`, `references/seller-rules.md`, `references/video-rules.md`, `references/live-rules.md`, or `references/search-rules.md`.
 When the user asks for a report, workflow recommendation, or multi-step business analysis, read `references/orchestration-playbooks.md`.
@@ -32,21 +33,22 @@ It is not an allowed substitute for API execution.
 ## Workflow
 
 1. Read `references/global-rules.md` mentally as the base contract for every request.
-2. Call `echotik_status` first if setup state is unknown.
-3. If the user has not configured credentials, route to setup guidance in `references/setup-and-auth.md`.
-4. If the user asks a docs or capability question, use `echotik_docs_search`.
-5. Identify the user's goal in plain language.
-6. Match the request to a scenario in `references/scenarios.md`.
-7. Use `echotik_route_request` plus `references/routing-policy.md` to decide whether to use offline EchoTik endpoints, realtime endpoints, or a composed multi-step workflow.
-8. If the chosen task is one of the dual-mode tasks listed in `references/global-rules.md`, ask the user to choose realtime or EchoTik offline before execution.
-9. If the user asks for a comprehensive report, confirm which related data sections should be included before launching a multi-endpoint workflow, then use `echotik_execute_report`.
-10. Ask only for missing high-value inputs if the scenario cannot be run safely with defaults.
-11. Use the structured route output and endpoint metadata from the local MCP layer to map user language into concrete API parameters.
-12. If parameter names or enums are uncertain, consult `https://opendocs.echotik.live/llms.txt` first and do not invent unsupported parameters.
-13. Call `echotik_call_api` for the chosen endpoint or endpoint sequence.
-14. If an EchoTik offline endpoint returns `code=0` with empty `data` for a lookup task, degrade to the relevant realtime endpoint when the global rules allow it.
-15. If tool execution is available, do not stop at explanation. Execute the API call.
-16. Return the result in business language, not API language.
+2. If the EchoTik MCP tools are unavailable in the current client, do not improvise. Route to the local bootstrap command in `references/setup-and-auth.md`.
+3. Call `echotik_status` first if setup state is unknown.
+4. If the user has not configured credentials, route to setup guidance in `references/setup-and-auth.md`.
+5. If the user asks a docs or capability question, use `echotik_docs_search`.
+6. Identify the user's goal in plain language.
+7. Match the request to a scenario in `references/scenarios.md`.
+8. Use `echotik_route_request` plus `references/routing-policy.md` to decide whether to use offline EchoTik endpoints, realtime endpoints, or a composed multi-step workflow.
+9. If the chosen task is one of the dual-mode tasks listed in `references/global-rules.md`, ask the user to choose realtime or EchoTik offline before execution.
+10. If the user asks for a comprehensive report, confirm which related data sections should be included before launching a multi-endpoint workflow, then use `echotik_execute_report`.
+11. Ask only for missing high-value inputs if the scenario cannot be run safely with defaults.
+12. Use the structured route output and endpoint metadata from the local MCP layer to map user language into concrete API parameters.
+13. If parameter names or enums are uncertain, consult `https://opendocs.echotik.live/llms.txt` first and do not invent unsupported parameters.
+14. Call `echotik_call_api` for the chosen endpoint or endpoint sequence.
+15. If an EchoTik offline endpoint returns `code=0` with empty `data` for a lookup task, degrade to the relevant realtime endpoint when the global rules allow it.
+16. If tool execution is available, do not stop at explanation. Execute the API call.
+17. Return the result in business language, not API language.
 
 ## Interaction Rules
 
@@ -62,6 +64,7 @@ It is not an allowed substitute for API execution.
 - Never use EchoTik web app pages as the source of truth for analytics results.
 - If the user asks for actual data, the correct behavior is `route -> map params -> call API`, not “go find the same feature on the website.”
 - If credentials are missing, pause and ask for setup completion instead of falling back to website exploration.
+- If the EchoTik MCP tools do not exist yet, require the local bootstrap script to run first. Missing MCP registration is a blocking setup error, not a soft warning.
 - Apply the atomic execution rules in `references/global-rules.md` (data freshness/T+1, pagination, image-URL conversion, identifier standards). Do not restate or re-derive them here.
 
 ## Input Compression Strategy
@@ -127,6 +130,7 @@ When the user has not set up credentials yet:
 - explain that EchoTik uses Basic Authentication with `username:password`
 - direct the user to register or retrieve credentials from the EchoTik API Dashboard
 - help them prepare the Authorization header or local configuration
+- require them to run `node scripts/bootstrap-mcp.mjs --client both --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>` or the auth-header equivalent before the first live request
 - only continue to live requests after setup is complete
 
 Do not ask the user to paste secrets into a public chat if the client supports local secret storage. Prefer local MCP configuration or environment variables.
@@ -146,6 +150,8 @@ Use them in that order when possible:
 1. status
 2. docs search or route
 3. live call
+
+If step 1 cannot run because the tools do not exist yet, bootstrap the local MCP server first instead of trying to answer from the web app.
 
 For execution requests, the expected sequence is:
 

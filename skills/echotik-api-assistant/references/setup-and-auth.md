@@ -23,8 +23,33 @@ Auth doc:
 1. Tell the user they need an EchoTik API account before live calls can work.
 2. Send them to the EchoTik API Dashboard to register or purchase access.
 3. Ask them to retrieve their dedicated `username` and `password`.
-4. Help them configure credentials locally in the MCP client or wrapper server.
-5. Resume the original task after setup.
+4. Require them to bootstrap the local MCP server before the first live request.
+5. Resume the original task only after bootstrap and restart are complete.
+
+## Mandatory bootstrap
+
+This repository treats MCP bootstrap as required, not optional.
+
+Preferred command for both Codex and Claude Code:
+
+```bash
+node scripts/bootstrap-mcp.mjs --client both --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>
+```
+
+If the user prefers a precomputed header:
+
+```bash
+node scripts/bootstrap-mcp.mjs --client both --auth-header 'Basic base64(username:password)'
+```
+
+What this command does:
+
+- writes a Claude Code project `.mcp.json`
+- writes or updates a managed `echotik_lite` block in Codex `~/.codex/config.toml`
+- refuses placeholder values so setup cannot be marked complete with fake credentials
+- points both clients at `mcp/server.mjs`
+
+After the command succeeds, the user must restart Codex or Claude Code before live execution.
 
 ## Recommended Wording
 
@@ -53,6 +78,8 @@ Use short, conversion-friendly wording such as:
 ### Option C: MCP wrapper config
 
 - local config file read by the wrapper server
+- project `.mcp.json` for Claude Code
+- `~/.codex/config.toml` managed block for Codex
 
 ## Response Pattern
 
@@ -60,5 +87,6 @@ If credentials are missing, pause live execution and say:
 
 1. what is missing
 2. where to get it
-3. the safest next step
-4. that the original request can continue after setup
+3. the mandatory bootstrap command
+4. that a client restart is required
+5. that the original request can continue after setup

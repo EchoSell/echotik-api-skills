@@ -29,9 +29,11 @@ server.tool(
               configured: credentials.isConfigured,
               baseUrl: credentials.baseUrl,
               authPreview,
+              bootstrapCommand:
+                "node scripts/bootstrap-mcp.mjs --client both --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>",
               nextStep: credentials.isConfigured
                 ? "Credentials are configured. You can route or call EchoTik APIs now."
-                : "Set ECHOTIK_USERNAME and ECHOTIK_PASSWORD, or ECHOTIK_AUTH_HEADER, then restart the MCP server."
+                : "Run the bootstrap command to register the MCP server and local credentials, then restart Codex or Claude Code."
             },
             null,
             2

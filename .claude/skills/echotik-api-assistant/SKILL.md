@@ -7,6 +7,12 @@ description: Route natural-language TikTok commerce intelligence requests into a
 
 This project-local Claude Code wrapper points to the canonical EchoTik skill implementation in the repository.
 
+Before any live request, confirm that the project root `.mcp.json` exists and that the user has completed:
+
+- `node scripts/bootstrap-mcp.mjs --client claude --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>`
+
+If the local EchoTik MCP tools are missing, stop and route to that bootstrap step first.
+
 Read the canonical skill contract first:
 
 - `../../../skills/echotik-api-assistant/SKILL.md`

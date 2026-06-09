@@ -6,6 +6,7 @@
   "description": "Lightweight EchoTik skill package with a minimal MCP server for natural-language API routing.",
   "scripts": {
     "start": "node ./mcp/server.mjs",
+    "setup:mcp": "node ./scripts/bootstrap-mcp.mjs",
     "check:docs": "node ./scripts/check-doc-drift.mjs",
     "test": "node --test"
   },

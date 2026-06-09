@@ -2,6 +2,33 @@
 
 EchoTik API Assistant is a lightweight, scenario-driven skill package for Codex and Claude Code. It translates natural-language TikTok commerce intelligence requests into authenticated EchoTik API workflows, with a minimal MCP execution layer and no build step.
 
+## Mandatory first step
+
+Live EchoTik usage is blocked until the user completes local authentication and MCP bootstrap.
+
+The required first action after installing this repository is:
+
+```bash
+npm install
+node scripts/bootstrap-mcp.mjs --client both --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>
+```
+
+Or, if the user already has a precomputed Basic header:
+
+```bash
+npm install
+node scripts/bootstrap-mcp.mjs --client both --auth-header 'Basic base64(username:password)'
+```
+
+This bootstrap is mandatory because it:
+
+- writes a Claude Code project `.mcp.json`
+- registers `mcp/server.mjs` in Codex `~/.codex/config.toml`
+- refuses placeholder credentials
+- makes the first real EchoTik API call possible after a client restart
+
+Until that step is finished, the skill should not attempt any live EchoTik API request.
+
 ## Platform compatibility
 
 This repository is structured to work with both mainstream skill layouts:
@@ -33,37 +60,36 @@ Once installed and authenticated, each natural-language request follows:
 
 ## Installation
 
+### GitHub one-shot install flow
+
+If a user installs directly from GitHub in Codex or Claude Code, the repository root now contains [SKILL.md](SKILL.md) so the install can land on a valid entrypoint instead of only the nested canonical skill folder.
+
+After the install lands:
+
+1. Run `npm install`.
+2. Run `node scripts/bootstrap-mcp.mjs --client both --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>`.
+3. Restart Codex or Claude Code.
+4. Start the real EchoTik task.
+
 ### Codex
 
 1. Clone this repository.
 2. Run `npm install`.
-3. Register the MCP server with your Codex MCP configuration using [mcp.config.example.json](mcp.config.example.json).
-4. Configure local EchoTik credentials.
+3. Run `node scripts/bootstrap-mcp.mjs --client codex --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>`.
+4. Restart Codex.
 5. Use the `echotik-api-assistant` skill.
+
+Codex bootstrap writes a managed `echotik_lite` block into `~/.codex/config.toml`, pointing to [mcp/server.mjs](mcp/server.mjs).
 
 ### Claude Code
 
 1. Clone this repository inside the project you want Claude Code to work in, or copy the skill into your Claude skills directory.
 2. Run `npm install`.
-3. Configure the MCP server so Claude Code can start [mcp/server.mjs](mcp/server.mjs). A typical command is:
-
-```bash
-claude mcp add echotik-lite --scope project \
-  --env ECHOTIK_USERNAME=your_username \
-  --env ECHOTIK_PASSWORD=your_password \
-  -- node /absolute/path/to/echotik-api-skills/mcp/server.mjs
-```
-
-If you prefer a precomputed header, replace the username/password env vars with:
-
-```bash
-claude mcp add echotik-lite --scope project \
-  --env ECHOTIK_AUTH_HEADER='Basic base64(username:password)' \
-  -- node /absolute/path/to/echotik-api-skills/mcp/server.mjs
-```
-
-4. Configure local EchoTik credentials.
+3. Run `node scripts/bootstrap-mcp.mjs --client claude --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>`.
+4. Restart Claude Code.
 5. Claude Code can discover the project-local wrapper skill at [.claude/skills/echotik-api-assistant/SKILL.md](.claude/skills/echotik-api-assistant/SKILL.md).
+
+Claude bootstrap writes a project-local `.mcp.json` pointing to [mcp/server.mjs](mcp/server.mjs).
 
 ## Authentication
 
@@ -78,6 +104,7 @@ Optional:
 
 Examples:
 
+- [SKILL.md](SKILL.md)
 - [.env.example](.env.example)
 - [mcp.config.example.json](mcp.config.example.json)
 

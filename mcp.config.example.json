@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "EchoTik Lite": {
+    "echotik-lite": {
       "command": "node",
       "args": [
         "/absolute/path/to/echotik-api-skills/mcp/server.mjs"
