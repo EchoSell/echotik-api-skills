@@ -1,13 +1,17 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
+import { createInterface } from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const envPath = path.join(__dirname, ".env");
-const defaultBaseUrl = "https://open.echotik.live";
 const minNodeMajor = 18;
+const managedBlockStart = "# >>> echotik-api-assistant >>>";
+const managedBlockEnd = "# <<< echotik-api-assistant <<<";
+const defaultBaseUrl = "https://open.echotik.live";
 
 function requireSupportedNodeVersion() {
   const major = Number(process.versions.node.split(".")[0]);
@@ -18,8 +22,6 @@ function requireSupportedNodeVersion() {
 
 function parseArgs(argv) {
   const args = {
-    baseUrl: defaultBaseUrl,
-    force: false,
     status: false
   };
 
@@ -32,8 +34,8 @@ function parseArgs(argv) {
     const [rawKey, inlineValue] = token.split("=", 2);
     const key = rawKey.slice(2);
 
-    if (key === "force" || key === "status") {
-      args[key] = true;
+    if (key === "status") {
+      args.status = true;
       continue;
     }
 
@@ -45,37 +47,13 @@ function parseArgs(argv) {
       index += 1;
     }
 
-    if (key === "username") args.username = nextValue;
+    if (key === "profile") args.profilePath = path.resolve(nextValue);
+    else if (key === "username") args.username = nextValue;
     else if (key === "password") args.password = nextValue;
-    else if (key === "auth-header") args.authHeader = nextValue;
-    else if (key === "base-url") args.baseUrl = nextValue;
     else throw new Error(`Unsupported argument: --${key}`);
   }
 
   return args;
-}
-
-function parseEnvFile(filePath) {
-  if (!fs.existsSync(filePath)) {
-    return {};
-  }
-
-  const result = {};
-  const text = fs.readFileSync(filePath, "utf8");
-  for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) {
-      continue;
-    }
-    const separator = line.indexOf("=");
-    if (separator === -1) {
-      continue;
-    }
-    const key = line.slice(0, separator).trim();
-    const value = line.slice(separator + 1).trim();
-    result[key] = value;
-  }
-  return result;
 }
 
 function isPlaceholder(value) {
@@ -83,7 +61,6 @@ function isPlaceholder(value) {
     return true;
   }
 
-  const normalized = String(value).trim().toLowerCase();
   return new Set([
     "",
     "your_username",
@@ -92,7 +69,7 @@ function isPlaceholder(value) {
     "changeme",
     "replace_me",
     "todo"
-  ]).has(normalized);
+  ]).has(String(value).trim().toLowerCase());
 }
 
 function requireRealValue(name, value) {
@@ -102,81 +79,144 @@ function requireRealValue(name, value) {
   return String(value).trim();
 }
 
-function getStatus(env) {
-  const hasUserPass = !isPlaceholder(env.ECHOTIK_USERNAME) && !isPlaceholder(env.ECHOTIK_PASSWORD);
-  const hasAuthHeader = !isPlaceholder(env.ECHOTIK_AUTH_HEADER);
+function detectProfilePath(explicitPath) {
+  if (explicitPath) {
+    return explicitPath;
+  }
+
+  const shell = process.env.SHELL || "";
+  const homeDir = os.homedir();
+
+  if (shell.includes("zsh")) {
+    return path.join(homeDir, ".zshrc");
+  }
+  if (shell.includes("bash")) {
+    const bashrc = path.join(homeDir, ".bashrc");
+    return fs.existsSync(bashrc) ? bashrc : path.join(homeDir, ".bash_profile");
+  }
+
+  return path.join(homeDir, ".profile");
+}
+
+function ensureParentDir(filePath) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+}
+
+function shellQuote(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+function stripManagedBlock(contents) {
+  const escapedStart = managedBlockStart.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedEnd = managedBlockEnd.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`${escapedStart}[\\s\\S]*?${escapedEnd}\\n?`, "g");
+  return contents.replace(pattern, "").trimEnd();
+}
+
+function buildManagedBlock(values) {
+  return [
+    managedBlockStart,
+    `export ECHOTIK_USERNAME=${shellQuote(values.username || "")}`,
+    `export ECHOTIK_PASSWORD=${shellQuote(values.password || "")}`,
+    managedBlockEnd,
+    ""
+  ].join("\n");
+}
+
+function profileContainsBlock(profilePath) {
+  if (!fs.existsSync(profilePath)) {
+    return false;
+  }
+  return fs.readFileSync(profilePath, "utf8").includes(managedBlockStart);
+}
+
+function currentSessionStatus() {
+  const hasUserPass =
+    !isPlaceholder(process.env.ECHOTIK_USERNAME) &&
+    !isPlaceholder(process.env.ECHOTIK_PASSWORD);
 
   return {
-    configured: hasUserPass || hasAuthHeader,
-    credentialMode: hasAuthHeader ? "auth_header" : hasUserPass ? "username_password" : "missing",
-    envPath,
-    baseUrl: env.ECHOTIK_BASE_URL || defaultBaseUrl
+    configured: hasUserPass,
+    credentialMode: hasUserPass ? "username_password" : "missing"
   };
 }
 
-function printStatus(status) {
-  process.stdout.write(`${JSON.stringify(status, null, 2)}\n`);
+async function collectCredentials(args) {
+  if (args.username || args.password) {
+    return {
+      username: requireRealValue("ECHOTIK_USERNAME", args.username),
+      password: requireRealValue("ECHOTIK_PASSWORD", args.password)
+    };
+  }
+
+  const rl = createInterface({ input, output });
+
+  try {
+    output.write("EchoTik setup will save credentials into your shell environment variables.\n");
+    const username = await rl.question("Paste ECHOTIK_USERNAME: ");
+    const password = await rl.question("Paste ECHOTIK_PASSWORD: ");
+
+    return {
+      username: requireRealValue("ECHOTIK_USERNAME", username),
+      password: requireRealValue("ECHOTIK_PASSWORD", password)
+    };
+  } finally {
+    rl.close();
+  }
 }
 
-function buildEnvContent(next) {
-  const lines = [
-    `ECHOTIK_USERNAME=${next.ECHOTIK_USERNAME || ""}`,
-    `ECHOTIK_PASSWORD=${next.ECHOTIK_PASSWORD || ""}`,
-    "# Optional alternative to username/password:",
-    `ECHOTIK_AUTH_HEADER=${next.ECHOTIK_AUTH_HEADER || ""}`,
-    `ECHOTIK_BASE_URL=${next.ECHOTIK_BASE_URL || defaultBaseUrl}`
-  ];
-  return `${lines.join("\n")}\n`;
+function writeProfile(profilePath, credentials) {
+  ensureParentDir(profilePath);
+  const existing = fs.existsSync(profilePath) ? fs.readFileSync(profilePath, "utf8") : "";
+  const cleaned = stripManagedBlock(existing);
+  const block = buildManagedBlock(credentials);
+  const next = cleaned ? `${cleaned}\n\n${block}` : block;
+  fs.writeFileSync(profilePath, next);
 }
 
-function main() {
+function printStatus(profilePath) {
+  const profileConfigured = profileContainsBlock(profilePath);
+  const current = currentSessionStatus();
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        profilePath,
+        configuredInProfile: profileConfigured,
+        configuredInCurrentSession: current.configured,
+        credentialModeInCurrentSession: current.credentialMode
+      },
+      null,
+      2
+    )}\n`
+  );
+}
+
+async function main() {
   requireSupportedNodeVersion();
   const args = parseArgs(process.argv);
-  const currentEnv = parseEnvFile(envPath);
+  const profilePath = detectProfilePath(args.profilePath);
 
   if (args.status) {
-    printStatus(getStatus(currentEnv));
+    printStatus(profilePath);
     return;
   }
 
-  const next = {
-    ECHOTIK_BASE_URL: requireRealValue("ECHOTIK_BASE_URL", args.baseUrl || currentEnv.ECHOTIK_BASE_URL || defaultBaseUrl)
-  };
-
-  if (args.authHeader) {
-    next.ECHOTIK_AUTH_HEADER = requireRealValue("ECHOTIK_AUTH_HEADER", args.authHeader);
-    next.ECHOTIK_USERNAME = "";
-    next.ECHOTIK_PASSWORD = "";
-  } else {
-    next.ECHOTIK_USERNAME = requireRealValue("ECHOTIK_USERNAME", args.username);
-    next.ECHOTIK_PASSWORD = requireRealValue("ECHOTIK_PASSWORD", args.password);
-    next.ECHOTIK_AUTH_HEADER = "";
-  }
-
-  if (fs.existsSync(envPath) && !args.force) {
-    const status = getStatus(currentEnv);
-    if (status.configured) {
-      throw new Error(
-        "Local auth is already configured. Re-run with --force if you want to overwrite the existing .env."
-      );
-    }
-  }
-
-  fs.writeFileSync(envPath, buildEnvContent(next));
+  const credentials = await collectCredentials(args);
+  writeProfile(profilePath, credentials);
 
   process.stdout.write(
     [
-      "EchoTik local auth configuration complete.",
-      `- env file: ${envPath}`,
-      `- mode: ${next.ECHOTIK_AUTH_HEADER ? "auth_header" : "username_password"}`,
-      `- baseUrl: ${next.ECHOTIK_BASE_URL}`,
-      "- You can now execute live EchoTik API requests with node ./echotik-api.mjs"
+      "EchoTik environment variable setup complete.",
+      `- shell profile: ${profilePath}`,
+      "- auth mode: username_password",
+      "- Next step: restart Codex or Claude Code, or open a new terminal session.",
+      `- If you want to use this shell immediately, run: source ${profilePath}`
     ].join("\n") + "\n"
   );
 }
 
 try {
-  main();
+  await main();
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;

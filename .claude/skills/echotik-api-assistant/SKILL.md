@@ -5,42 +5,34 @@ description: Route natural-language TikTok commerce intelligence requests into a
 
 # EchoTik API Assistant
 
-This Claude Code wrapper points to the canonical EchoTik skill implementation in the repository.
-
-All commands below must be run from the repository root, not from `.claude/skills/echotik-api-assistant/`.
+This Claude Code entrypoint points to the shared canonical skill in this repository.
 
 Before any live request:
 
-- check status with `node ./configure-echotik-auth.mjs --status`
-- if auth is missing, require:
-  - `node ./configure-echotik-auth.mjs --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>`
-  - or `node ./configure-echotik-auth.mjs --auth-header 'Basic ...'`
+- check setup status with `node ./configure-echotik-auth.mjs --status`
+- if EchoTik auth is not configured yet, ask the user to run `node ./configure-echotik-auth.mjs`
+- continue only after the environment variable setup is complete
 
-If local auth is missing, stop live execution and route to setup first.
+Read the canonical skill first:
 
-Read the canonical skill contract first:
+- `../../../.agents/skills/echotik-api-assistant/SKILL.md`
 
-- `../../../skills/echotik-api-assistant/SKILL.md`
+Use the same supporting references:
 
-Use the same progressive-disclosure references:
+- `../../../.agents/skills/echotik-api-assistant/references/global-rules.md`
+- `../../../.agents/skills/echotik-api-assistant/references/influencer-rules.md`
+- `../../../.agents/skills/echotik-api-assistant/references/product-rules.md`
+- `../../../.agents/skills/echotik-api-assistant/references/seller-rules.md`
+- `../../../.agents/skills/echotik-api-assistant/references/video-rules.md`
+- `../../../.agents/skills/echotik-api-assistant/references/live-rules.md`
+- `../../../.agents/skills/echotik-api-assistant/references/search-rules.md`
+- `../../../.agents/skills/echotik-api-assistant/references/routing-policy.md`
+- `../../../.agents/skills/echotik-api-assistant/references/scenarios.md`
+- `../../../.agents/skills/echotik-api-assistant/references/orchestration-playbooks.md`
+- `../../../.agents/skills/echotik-api-assistant/references/setup-and-auth.md`
 
-- `../../../skills/echotik-api-assistant/references/global-rules.md`
-- `../../../skills/echotik-api-assistant/references/influencer-rules.md`
-- `../../../skills/echotik-api-assistant/references/product-rules.md`
-- `../../../skills/echotik-api-assistant/references/seller-rules.md`
-- `../../../skills/echotik-api-assistant/references/video-rules.md`
-- `../../../skills/echotik-api-assistant/references/live-rules.md`
-- `../../../skills/echotik-api-assistant/references/search-rules.md`
-- `../../../skills/echotik-api-assistant/references/routing-policy.md`
-- `../../../skills/echotik-api-assistant/references/scenarios.md`
-- `../../../skills/echotik-api-assistant/references/orchestration-playbooks.md`
-- `../../../skills/echotik-api-assistant/references/setup-and-auth.md`
-
-Use these root scripts:
+Use these repository scripts when needed:
 
 - `./configure-echotik-auth.mjs`
 - `./search-echotik-docs.mjs`
 - `./echotik-api.mjs`
-- `./verify-install.mjs`
-
-Apply the canonical skill behavior without divergence. This wrapper exists only to make the repository natively discoverable by Claude Code in the conventional `.claude/skills/` layout.

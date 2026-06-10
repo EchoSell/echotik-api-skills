@@ -1,11 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const envPath = path.join(__dirname, ".env");
 const defaultBaseUrl = "https://open.echotik.live";
 const defaultTimeoutMs = 30000;
 const minNodeMajor = 18;
@@ -51,27 +45,6 @@ function parseArgs(argv) {
   return args;
 }
 
-function parseEnvFile(filePath) {
-  if (!fs.existsSync(filePath)) {
-    return {};
-  }
-
-  const result = {};
-  const text = fs.readFileSync(filePath, "utf8");
-  for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) {
-      continue;
-    }
-    const separator = line.indexOf("=");
-    if (separator === -1) {
-      continue;
-    }
-    result[line.slice(0, separator).trim()] = line.slice(separator + 1).trim();
-  }
-  return result;
-}
-
 function isPlaceholder(value) {
   if (!value) {
     return true;
@@ -87,15 +60,12 @@ function isPlaceholder(value) {
   ]).has(String(value).trim().toLowerCase());
 }
 
-function buildAuthHeader(env) {
-  if (!isPlaceholder(env.ECHOTIK_AUTH_HEADER)) {
-    return env.ECHOTIK_AUTH_HEADER;
-  }
-  if (!isPlaceholder(env.ECHOTIK_USERNAME) && !isPlaceholder(env.ECHOTIK_PASSWORD)) {
-    return `Basic ${Buffer.from(`${env.ECHOTIK_USERNAME}:${env.ECHOTIK_PASSWORD}`).toString("base64")}`;
+function buildAuthHeader() {
+  if (!isPlaceholder(process.env.ECHOTIK_USERNAME) && !isPlaceholder(process.env.ECHOTIK_PASSWORD)) {
+    return `Basic ${Buffer.from(`${process.env.ECHOTIK_USERNAME}:${process.env.ECHOTIK_PASSWORD}`).toString("base64")}`;
   }
   throw new Error(
-    "EchoTik auth is not configured. Run node ./configure-echotik-auth.mjs --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD> first."
+    "EchoTik environment variables are not configured. Run node ./configure-echotik-auth.mjs first, then restart Codex or Claude Code."
   );
 }
 
@@ -139,9 +109,8 @@ async function main() {
     throw new Error("--path must start with /api/");
   }
 
-  const env = parseEnvFile(envPath);
-  const baseUrl = env.ECHOTIK_BASE_URL || defaultBaseUrl;
-  const authHeader = buildAuthHeader(env);
+  const baseUrl = defaultBaseUrl;
+  const authHeader = buildAuthHeader();
   const query = parseJsonFlag("--query", args.query);
   const body = parseJsonFlag("--body", args.body);
 

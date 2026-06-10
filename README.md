@@ -1,131 +1,67 @@
 # EchoTik API Skills
 
-Zero-dependency EchoTik skill package for both Codex and Claude Code.
+EchoTik API Skills provides a ready-to-install EchoTik API skill for both Codex and Claude Code.
 
-Runtime requirement: `Node.js >= 18`.
+It helps AI assistants turn natural-language TikTok commerce requests into guided EchoTik API workflows for creator discovery, product research, shop analysis, video intelligence, live lookup, search, and reporting.
 
-License: `MIT`
+Runtime requirement: `Node.js >= 18`
 
-This repository no longer ships any MCP server, MCP config, SDK dependency, or background service. It is now just:
+## Skill Layouts
 
-- skill documentation
-- scenario and rule references
-- root-level scripts that call the EchoTik HTTP API directly
+This project includes the expected skill locations for both tools:
 
-## What Changed
+- Codex: `.agents/skills/echotik-api-assistant/SKILL.md`
+- Claude Code: `.claude/skills/echotik-api-assistant/SKILL.md`
 
-- no `mcp/` service
-- no SDK dependency
-- no `npm install`
-- no client-specific MCP registration
-- live requests run through local scripts that use Node's built-in `fetch`
+The Codex entrypoint is the main skill. The Claude entrypoint points to the same instructions and references.
 
-## GitHub Install Goal
+## Install
 
-This repo is structured so a user can say:
+Users can install this repository from GitHub with prompts such as:
 
 - `帮我安装这个 skills: [EchoSell/echotik-api-skills](https://github.com/EchoSell/echotik-api-skills)`
 - `Install this skill: [EchoSell/echotik-api-skills](https://github.com/EchoSell/echotik-api-skills)`
 
-And the AI can discover the root entrypoints immediately.
+Manual setup:
 
-Important root files:
+```bash
+git clone https://github.com/EchoSell/echotik-api-skills.git
+cd echotik-api-skills
+```
 
-- `SKILL.md`
-- `CLAUDE.md`
-- `install.sh`
-- `configure-echotik-auth.mjs`
-- `search-echotik-docs.mjs`
-- `echotik-api.mjs`
-- `verify-install.mjs`
+## First-Time Setup
 
-The canonical skill content still lives in:
+Before any live EchoTik request, configure EchoTik credentials into shell environment variables.
 
-- `skills/echotik-api-assistant/SKILL.md`
-
-Claude-compatible discovery is also included in:
-
-- `.claude/skills/echotik-api-assistant/SKILL.md`
-
-## Mandatory First Step
-
-Live EchoTik usage is blocked until the local auth configuration is completed.
-
-All commands in this README assume the current working directory is the repository root.
-
-Check status:
+Check current status:
 
 ```bash
 node ./configure-echotik-auth.mjs --status
 ```
 
-Configure with EchoTik username/password:
+Run the guided setup:
 
 ```bash
-node ./configure-echotik-auth.mjs --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>
+node ./configure-echotik-auth.mjs
 ```
 
-Or configure with a precomputed Basic header:
+What the setup script does:
 
-```bash
-node ./configure-echotik-auth.mjs --auth-header 'Basic base64(username:password)'
-```
+- prompts for EchoTik credentials locally
+- writes a managed EchoTik export block into the user's shell profile
+- stores `ECHOTIK_USERNAME` and `ECHOTIK_PASSWORD` in environment variables for future sessions
 
-Until this step succeeds, the skill must not execute live API requests.
+After setup, restart Codex or Claude Code, or open a new terminal session.
 
-## Why The Scripts Are In The Root
+## Use The Scripts
 
-Yes, for GitHub-installed skills, root-level entry scripts are the safest choice.
-
-Reasons:
-
-- the installer or AI usually sees the repository root first
-- root-level commands are easier for Codex and Claude to discover and run
-- no extra dependency bootstrap is needed
-- the required first-run auth step is explicit and hard to miss
-
-The nested `skills/` and `.claude/skills/` folders are still present because they match the two common skill layouts, but the operational scripts live at the root on purpose.
-
-## Runtime Flow
-
-### 1. Install or clone the repository
-
-Any install path is fine as long as the repository files are available locally.
-
-Recommended GitHub install flow:
-
-```bash
-git clone <your-repo-url>
-cd echotik-api-skills
-./install.sh
-```
-
-### 2. Run the mandatory auth configuration
-
-```bash
-node ./configure-echotik-auth.mjs --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>
-```
-
-This script:
-
-- refuses placeholders
-- writes local credentials into `.env`
-- preserves a simple local shape that both Codex and Claude can use
-- marks the skill ready for live requests
-
-### 3. Optionally inspect the docs index
+### Search EchoTik docs
 
 ```bash
 node ./search-echotik-docs.mjs --query "creator detail"
 ```
 
-### 4. Optionally run install verification
-
-```bash
-node ./verify-install.mjs
-```
-
-### 5. Execute a live API request
+### Execute a live EchoTik API request
 
 ```bash
 node ./echotik-api.mjs \
@@ -133,63 +69,76 @@ node ./echotik-api.mjs \
   --query '{"unique_id":"demo_creator"}'
 ```
 
-## Auth Model
+### Execute a POST request
 
-EchoTik uses Basic Authentication. This repo supports:
+```bash
+node ./echotik-api.mjs \
+  --path /api/v3/some/post/endpoint \
+  --method POST \
+  --body '{"example":"value"}'
+```
 
-- `ECHOTIK_USERNAME` + `ECHOTIK_PASSWORD`
-- `ECHOTIK_AUTH_HEADER`
+## What The Skill Covers
 
-Optional:
+The skill is designed for these common business tasks:
 
-- `ECHOTIK_BASE_URL`
+- find fast-growing or high-performing creators
+- research winning products and product trends
+- analyze shops and seller ecosystems
+- inspect video performance, comments, captions, and linked products
+- search creators, products, videos, hashtags, music, and live sessions
+- assemble multi-step business workflows and reports
 
-Example local config:
+The main skill behavior lives in:
 
-- `.env.example`
+- `.agents/skills/echotik-api-assistant/SKILL.md`
 
-## AI Behavior Contract
+Core reference modules:
 
-When the skill is active:
+- `.agents/skills/echotik-api-assistant/references/global-rules.md`
+- `.agents/skills/echotik-api-assistant/references/scenarios.md`
+- `.agents/skills/echotik-api-assistant/references/routing-policy.md`
+- `.agents/skills/echotik-api-assistant/references/orchestration-playbooks.md`
+- `.agents/skills/echotik-api-assistant/references/setup-and-auth.md`
 
-1. Identify the user's business goal first.
-2. Choose the closest scenario from the skill docs.
-3. Ask only for missing high-value inputs.
-4. Map those inputs to EchoTik API parameters.
-5. If parameter certainty is low, consult the official docs first.
-6. Execute with `node ./echotik-api.mjs`.
-7. Return business-facing output, not raw API jargon.
+Domain-specific rule sets are included for:
 
-## Root Scripts
+- creators
+- products
+- sellers
+- videos
+- live rooms
+- search
 
-### `install.sh`
-
-Lightweight helper that prints the required next commands and checks whether Node is available.
+## Project Scripts
 
 ### `configure-echotik-auth.mjs`
 
-Mandatory local auth setup script.
+Guided local setup for EchoTik environment variables.
 
-Supports:
+Supported flags:
 
 - `--status`
+- `--profile`
 - `--username`
 - `--password`
-- `--auth-header`
-- `--base-url`
-- `--force`
 
 ### `search-echotik-docs.mjs`
 
-Fetches the EchoTik docs index and returns simple text matches from:
+Looks up matching lines from the EchoTik docs index at:
 
 - `https://opendocs.echotik.live/llms.txt`
 
+Supported flags:
+
+- `--query`
+- `--limit`
+
 ### `echotik-api.mjs`
 
-Direct HTTP executor for EchoTik endpoints using local credentials from `.env`.
+Executes EchoTik API requests with configured environment variables.
 
-Supports:
+Supported flags:
 
 - `--path`
 - `--method`
@@ -197,58 +146,21 @@ Supports:
 - `--body`
 - `--timeout-ms`
 
-### `verify-install.mjs`
+## Authentication
 
-Runs a lightweight install smoke check for:
+EchoTik uses Basic Authentication.
 
-- Node availability
-- Node version compatibility
-- required root files
-- current auth setup status
-- docs index reachability
+Supported environment variables:
 
-Exit behavior:
+- `ECHOTIK_USERNAME`
+- `ECHOTIK_PASSWORD`
 
-- exits `0` when the install is structurally healthy, even if auth is not configured yet
-- exits `1` only when the repository is incomplete or the runtime is unsupported
+See:
 
-### `smoke-test.mjs`
+- `.agents/skills/echotik-api-assistant/references/setup-and-auth.md`
 
-Maintainer-oriented helper that runs a couple of basic local checks and prints their output.
-
-## Repo Layout
-
-- `SKILL.md`: root install entrypoint for GitHub-based skill installs
-- `CLAUDE.md`: repository-level Claude guidance
-- `LICENSE`: MIT license for open-source reuse
-- `CHANGELOG.md`: repository-level change history
-- `.claude/skills/echotik-api-assistant/SKILL.md`: Claude discovery wrapper
-- `skills/echotik-api-assistant/SKILL.md`: canonical skill instructions
-- `skills/echotik-api-assistant/references/`: business rules and scenarios
-- `install.sh`: root install helper
-- `configure-echotik-auth.mjs`: mandatory auth setup
-- `search-echotik-docs.mjs`: docs lookup helper
-- `echotik-api.mjs`: direct EchoTik HTTP executor
-- `verify-install.mjs`: install smoke-check helper
-
-## Maintenance
-
-When updating the skill:
-
-1. update the relevant rules under `skills/echotik-api-assistant/references/`
-2. update the scenario wording in `skills/echotik-api-assistant/SKILL.md` if behavior changes
-3. keep root scripts stable so GitHub installs remain easy for Codex and Claude
-
-## Release Notes
-
-- See `CHANGELOG.md` for repository-level change history.
-
-## License
-
-This repository is released under the `MIT` License. See `LICENSE`.
-
-## Security Rules
+## Security
 
 - never commit real credentials
-- never paste secrets into public chat unless the user explicitly accepts that risk
-- prefer local `.env` storage created by `configure-echotik-auth.mjs`
+- prefer local environment variables for secrets
+- avoid pasting credentials into shared chat unless the user explicitly accepts that risk
