@@ -1,26 +1,30 @@
 ---
 name: echotik-api-assistant
-description: Installable EchoTik API skill entrypoint for Codex and Claude Code. Route natural-language TikTok commerce intelligence requests into authenticated EchoTik API workflows, and force local MCP bootstrap before the first live request.
+description: Installable EchoTik API skill entrypoint for Codex and Claude Code. Route natural-language TikTok commerce requests into direct EchoTik HTTP workflows, and require local auth configuration before the first live request.
 ---
 
 # EchoTik API Assistant
 
-This repository-level entrypoint exists so GitHub root installs work in both Codex and Claude Code.
+This root entrypoint exists so GitHub installs work cleanly in both Codex and Claude Code.
 
-Before any live EchoTik task, enforce local setup in this order:
+All commands in this repository must be run from the repository root unless a file explicitly says otherwise.
 
-1. Check whether the local EchoTik MCP tools are already available.
-2. If they are missing, do not attempt live execution.
-3. Require the user to configure real EchoTik credentials first.
-4. Then bootstrap the local MCP server by running:
-   - `node scripts/bootstrap-mcp.mjs --client both --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>`
-   - or `node scripts/bootstrap-mcp.mjs --client both --auth-header 'Basic ...'`
-5. Tell the user to restart Codex or Claude Code after bootstrap completes.
-6. Only after restart, continue with the original EchoTik task.
+## Mandatory Setup Gate
 
-Do not treat setup as optional. Missing credentials or missing MCP registration are blocking conditions.
+Before any live EchoTik request:
 
-After bootstrap, follow the canonical skill contract:
+1. Check local auth status with `node ./configure-echotik-auth.mjs --status`.
+2. If credentials are missing, stop live execution.
+3. Require the user to finish local auth setup with one of these commands:
+   - `node ./configure-echotik-auth.mjs --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>`
+   - `node ./configure-echotik-auth.mjs --auth-header 'Basic ...'`
+4. Only continue after the configuration script succeeds.
+
+Do not treat this as optional. Missing local auth is a blocking condition.
+
+## Canonical Skill Contract
+
+After setup, follow:
 
 - `skills/echotik-api-assistant/SKILL.md`
 - `skills/echotik-api-assistant/references/global-rules.md`
@@ -28,9 +32,13 @@ After bootstrap, follow the canonical skill contract:
 - `skills/echotik-api-assistant/references/scenarios.md`
 - `skills/echotik-api-assistant/references/orchestration-playbooks.md`
 
-Use the execution layer in this repository:
+## Execution Scripts
 
-- `mcp/server.mjs`
-- `mcp/router.mjs`
-- `mcp/catalog.mjs`
-- `mcp/client.mjs`
+Use repository-root scripts:
+
+- `./configure-echotik-auth.mjs`
+- `./search-echotik-docs.mjs`
+- `./echotik-api.mjs`
+- `./verify-install.mjs`
+
+Do not require or mention MCP setup, MCP tools, or MCP services. This repository is intentionally direct-script only.

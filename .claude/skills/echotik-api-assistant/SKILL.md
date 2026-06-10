@@ -1,23 +1,28 @@
 ---
 name: echotik-api-assistant
-description: Route natural-language TikTok commerce intelligence requests into authenticated EchoTik API workflows. Use when the task involves creator discovery, product research, seller analysis, video intelligence, live-session lookup, search, reporting, or documentation-guided parameter mapping over the EchoTik API surface.
+description: Route natural-language TikTok commerce intelligence requests into authenticated EchoTik API workflows through local scripts. Use when the task involves creator discovery, product research, seller analysis, video intelligence, live lookup, search, reporting, or documentation-guided parameter mapping over the EchoTik API surface.
 ---
 
 # EchoTik API Assistant
 
-This project-local Claude Code wrapper points to the canonical EchoTik skill implementation in the repository.
+This Claude Code wrapper points to the canonical EchoTik skill implementation in the repository.
 
-Before any live request, confirm that the project root `.mcp.json` exists and that the user has completed:
+All commands below must be run from the repository root, not from `.claude/skills/echotik-api-assistant/`.
 
-- `node scripts/bootstrap-mcp.mjs --client claude --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>`
+Before any live request:
 
-If the local EchoTik MCP tools are missing, stop and route to that bootstrap step first.
+- check status with `node ./configure-echotik-auth.mjs --status`
+- if auth is missing, require:
+  - `node ./configure-echotik-auth.mjs --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>`
+  - or `node ./configure-echotik-auth.mjs --auth-header 'Basic ...'`
+
+If local auth is missing, stop live execution and route to setup first.
 
 Read the canonical skill contract first:
 
 - `../../../skills/echotik-api-assistant/SKILL.md`
 
-Use the same progressive-disclosure references from the canonical skill directory:
+Use the same progressive-disclosure references:
 
 - `../../../skills/echotik-api-assistant/references/global-rules.md`
 - `../../../skills/echotik-api-assistant/references/influencer-rules.md`
@@ -31,11 +36,11 @@ Use the same progressive-disclosure references from the canonical skill director
 - `../../../skills/echotik-api-assistant/references/orchestration-playbooks.md`
 - `../../../skills/echotik-api-assistant/references/setup-and-auth.md`
 
-Use the local MCP execution layer from this repository:
+Use these root scripts:
 
-- `../../../mcp/catalog.mjs`
-- `../../../mcp/router.mjs`
-- `../../../mcp/client.mjs`
-- `../../../mcp/server.mjs`
+- `./configure-echotik-auth.mjs`
+- `./search-echotik-docs.mjs`
+- `./echotik-api.mjs`
+- `./verify-install.mjs`
 
 Apply the canonical skill behavior without divergence. This wrapper exists only to make the repository natively discoverable by Claude Code in the conventional `.claude/skills/` layout.

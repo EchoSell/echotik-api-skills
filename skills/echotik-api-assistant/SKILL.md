@@ -1,30 +1,32 @@
 ---
 name: echotik-api-assistant
-description: Route natural-language TikTok commerce intelligence requests into authenticated EchoTik API workflows. Use when the task involves creator discovery, product research, seller analysis, video intelligence, live-session lookup, search, reporting, or documentation-guided parameter mapping over the EchoTik API surface.
+description: Route natural-language TikTok commerce intelligence requests into authenticated EchoTik API workflows. Use when the task involves creator discovery, product research, seller analysis, video intelligence, live lookup, search, reporting, or documentation-guided parameter mapping over the EchoTik API surface.
 ---
 
 # EchoTik API Assistant
 
-This skill turns EchoTik API calls into scenario-based workflows for non-technical users.
+This skill turns EchoTik HTTP API calls into scenario-based workflows for non-technical users.
 
-Do not start by listing raw endpoints or all parameters. First identify the user's business goal, then choose the closest scenario, collect only the missing inputs, map them to API parameters, and call the API.
+All commands below must be run from the repository root, not from `skills/echotik-api-assistant/`.
 
-Before any live API call, check whether the user has configured EchoTik credentials. If not, guide them through the onboarding steps in `references/setup-and-auth.md`.
-Before any live API call, also confirm that the local EchoTik MCP server has actually been bootstrapped. If the tools are missing or the setup is incomplete, stop and route to the bootstrap flow in `references/setup-and-auth.md`.
-Always apply the lowest-level execution rules from `references/global-rules.md`.
-Apply the relevant module rules file for the target entity family, such as `references/influencer-rules.md`, `references/product-rules.md`, `references/seller-rules.md`, `references/video-rules.md`, `references/live-rules.md`, or `references/search-rules.md`.
+Do not start by listing raw endpoints or dumping all parameters. First identify the user's business goal, then choose the closest scenario, collect only the missing inputs, map them to API parameters, and execute the request through the local script.
+
+Before any live API call, check local auth status with `node ./configure-echotik-auth.mjs --status`.
+If auth is missing or placeholder-like, stop and route to `references/setup-and-auth.md`.
+Always apply the lowest-level rules from `references/global-rules.md`.
+Apply the relevant module rules file for the target entity family.
 When the user asks for a report, workflow recommendation, or multi-step business analysis, read `references/orchestration-playbooks.md`.
 
 ## Hard Rule
 
-For any data lookup, ranking, analysis, search, comparison, or reporting task, use EchoTik API tools only.
+For any data lookup, ranking, analysis, search, comparison, or reporting task, use EchoTik API execution only.
 
 Do not browse, inspect, scrape, or navigate `echotik.live` product pages to answer user data requests.
 
 The website may only be referenced for:
 
 - registration
-- API key retrieval
+- credential retrieval
 - billing or plan onboarding
 - auth setup guidance
 
@@ -32,23 +34,20 @@ It is not an allowed substitute for API execution.
 
 ## Workflow
 
-1. Read `references/global-rules.md` mentally as the base contract for every request.
-2. If the EchoTik MCP tools are unavailable in the current client, do not improvise. Route to the local bootstrap command in `references/setup-and-auth.md`.
-3. Call `echotik_status` first if setup state is unknown.
-4. If the user has not configured credentials, route to setup guidance in `references/setup-and-auth.md`.
-5. If the user asks a docs or capability question, use `echotik_docs_search`.
-6. Identify the user's goal in plain language.
-7. Match the request to a scenario in `references/scenarios.md`.
-8. Use `echotik_route_request` plus `references/routing-policy.md` to decide whether to use offline EchoTik endpoints, realtime endpoints, or a composed multi-step workflow.
-9. If the chosen task is one of the dual-mode tasks listed in `references/global-rules.md`, ask the user to choose realtime or EchoTik offline before execution.
-10. If the user asks for a comprehensive report, confirm which related data sections should be included before launching a multi-endpoint workflow, then use `echotik_execute_report`.
-11. Ask only for missing high-value inputs if the scenario cannot be run safely with defaults.
-12. Use the structured route output and endpoint metadata from the local MCP layer to map user language into concrete API parameters.
-13. If parameter names or enums are uncertain, consult `https://opendocs.echotik.live/llms.txt` first and do not invent unsupported parameters.
-14. Call `echotik_call_api` for the chosen endpoint or endpoint sequence.
-15. If an EchoTik offline endpoint returns `code=0` with empty `data` for a lookup task, degrade to the relevant realtime endpoint when the global rules allow it.
-16. If tool execution is available, do not stop at explanation. Execute the API call.
-17. Return the result in business language, not API language.
+1. Read `references/global-rules.md` mentally as the base contract.
+2. Run `node ./configure-echotik-auth.mjs --status` if setup state is unknown.
+3. If credentials are missing, route to `references/setup-and-auth.md`.
+4. Identify the user's goal in plain language.
+5. Match the request to a scenario in `references/scenarios.md`.
+6. Use `references/routing-policy.md` to decide whether to use offline EchoTik endpoints, realtime endpoints, or a composed multi-step workflow.
+7. If the chosen task is dual-mode, ask the user to choose realtime or EchoTik offline before execution.
+8. If the user asks for a comprehensive report, confirm which related data sections should be included before launching a multi-endpoint workflow.
+9. Ask only for missing high-value inputs if the scenario cannot run safely with defaults.
+10. If parameter names or enums are uncertain, consult `https://opendocs.echotik.live/llms.txt` first and do not invent unsupported parameters.
+11. Execute the chosen endpoint through `node ./echotik-api.mjs`.
+12. If an offline endpoint returns `code=0` with empty `data` for a lookup task, degrade to the relevant realtime endpoint when the global rules allow it.
+13. If tool execution is available, do not stop at explanation. Execute the API call.
+14. Return the result in business language, not API language.
 
 ## Interaction Rules
 
@@ -60,12 +59,9 @@ It is not an allowed substitute for API execution.
 - When the user's request is vague, offer 2 to 4 scenario options instead of asking an open question.
 - If the user asks about API usage, endpoint meaning, auth, limits, or data freshness, answer from the docs as well as from execution results when relevant.
 - Treat the whole EchoTik doc set as available capability, not only a small subset of endpoints.
-- Prefer the local tools over manually reconstructing endpoint paths from memory.
 - Never use EchoTik web app pages as the source of truth for analytics results.
-- If the user asks for actual data, the correct behavior is `route -> map params -> call API`, not “go find the same feature on the website.”
+- If the user asks for actual data, the correct behavior is `route -> map params -> execute script`, not “go find the same feature on the website.”
 - If credentials are missing, pause and ask for setup completion instead of falling back to website exploration.
-- If the EchoTik MCP tools do not exist yet, require the local bootstrap script to run first. Missing MCP registration is a blocking setup error, not a soft warning.
-- Apply the atomic execution rules in `references/global-rules.md` (data freshness/T+1, pagination, image-URL conversion, identifier standards). Do not restate or re-derive them here.
 
 ## Input Compression Strategy
 
@@ -99,19 +95,19 @@ If no exact scenario fits:
 
 ## Authoritative Sources
 
-The authoritative runtime rules live in:
+The authoritative behavior lives in:
 
 - `references/global-rules.md`
-- the relevant module rules file, such as `references/influencer-rules.md`
-- the local MCP execution layer, especially:
-  - `mcp/catalog.mjs`
-  - `mcp/router.mjs`
+- the relevant module rules file
+- `references/routing-policy.md`
+- `references/scenarios.md`
+- the official EchoTik docs index: `https://opendocs.echotik.live/llms.txt`
 
-Do not maintain a second handwritten parameter source of truth inside the skill folder if the same mapping already exists in the execution layer.
+Do not maintain a second handwritten parameter source of truth if the official docs already define it.
 
 ## Full Coverage Requirement
 
-This skill should support all public EchoTik API families represented in the local MCP catalog and in the official EchoTik docs when possible, including creator, product, seller, video, live, search, and insight workflows.
+This skill should support all public EchoTik API families documented by EchoTik when practical, including creator, product, seller, video, live, search, and insight workflows.
 
 ## Good Skill Design Rules
 
@@ -130,38 +126,28 @@ When the user has not set up credentials yet:
 - explain that EchoTik uses Basic Authentication with `username:password`
 - direct the user to register or retrieve credentials from the EchoTik API Dashboard
 - help them prepare the Authorization header or local configuration
-- require them to run `node scripts/bootstrap-mcp.mjs --client both --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>` or the auth-header equivalent before the first live request
+- require them to run `node ./configure-echotik-auth.mjs --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>` or the auth-header equivalent before the first live request
 - only continue to live requests after setup is complete
 
-Do not ask the user to paste secrets into a public chat if the client supports local secret storage. Prefer local MCP configuration or environment variables.
+Do not ask the user to paste secrets into a public chat if the client supports local secret storage. Prefer local `.env` storage.
 
-## Tool Contract
+## Script Contract
 
-This skill assumes a lightweight local MCP server exposes:
+This skill assumes these root-level scripts exist:
 
-- `echotik_status`
-- `echotik_docs_search`
-- `echotik_route_request`
-- `echotik_execute_report`
-- `echotik_call_api`
+- `./configure-echotik-auth.mjs`
+- `./search-echotik-docs.mjs`
+- `./echotik-api.mjs`
+- `./verify-install.mjs`
 
-Use them in that order when possible:
+Use them in this order when possible:
 
-1. status
-2. docs search or route
-3. live call
+1. auth status
+2. docs lookup when parameters are unclear
+3. optional install verification
+4. live call
 
-If step 1 cannot run because the tools do not exist yet, bootstrap the local MCP server first instead of trying to answer from the web app.
-
-For execution requests, the expected sequence is:
-
-1. `echotik_status`
-2. `echotik_route_request` or `echotik_execute_report`
-3. `echotik_call_api` when a direct single-endpoint call is appropriate
-
-Do not replace step 3 with website browsing.
-
-## Execution Examples
+## Execution Example
 
 Example user request:
 
@@ -169,25 +155,14 @@ Example user request:
 
 Expected behavior:
 
-1. recognize this as an influencer ranking or creator trend request
-2. choose the best EchoTik influencer API path from the documented API surface
+1. recognize this as a creator ranking request
+2. choose the best EchoTik creator ranking API path from the documented surface
 3. map:
    - market -> `US`
-   - recent -> recent ranking or recent trend window
-   - top 10 -> `size=10`
+   - top 10 -> request size `10`
    - fastest follower growth -> the follower-growth-oriented sort or ranking parameters supported by the chosen API
-4. call `echotik_call_api`
+4. execute with `node ./echotik-api.mjs`
 5. answer with the returned top 10 creators
-
-Example user request:
-
-- "Show me this creator's profile details."
-
-Expected behavior:
-
-1. detect that creator detail exists in both offline EchoTik and realtime modes
-2. ask the user which one they want first
-3. only call the selected mode after the user chooses
 
 Incorrect behavior:
 
@@ -202,4 +177,4 @@ Incorrect behavior:
 - If the API supports too many filters, start simple and offer an "advanced filtering" follow-up only after the first result.
 - If realtime endpoints fail because of risk control or freshness issues, fall back to the closest offline endpoint and explain the tradeoff.
 - If a needed API parameter is unclear, resolve it from the EchoTik API docs first, not from the web product UI.
-- If an offline EchoTik lookup returns empty data, explain the T+1/offline nature and degrade to the relevant realtime endpoint when appropriate.
+- If an offline EchoTik lookup returns empty data, explain the T+1 or offline nature and degrade to the relevant realtime endpoint when appropriate.

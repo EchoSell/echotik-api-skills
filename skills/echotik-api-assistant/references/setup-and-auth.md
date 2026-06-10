@@ -2,11 +2,13 @@
 
 Use this guide whenever the user has not configured EchoTik credentials yet.
 
+All commands below must be run from the repository root.
+
 ## Goal
 
 Convert first-time users into successfully authenticated users with the least friction, while directing them to the EchoTik purchase and credential flow.
 
-## What the docs say
+## What The Docs Say
 
 EchoTik public docs state that API access uses Basic Authentication and that users should obtain their dedicated `username` and `password` from the EchoTik API platform.
 
@@ -23,33 +25,43 @@ Auth doc:
 1. Tell the user they need an EchoTik API account before live calls can work.
 2. Send them to the EchoTik API Dashboard to register or purchase access.
 3. Ask them to retrieve their dedicated `username` and `password`.
-4. Require them to bootstrap the local MCP server before the first live request.
-5. Resume the original task only after bootstrap and restart are complete.
+4. Require them to run the local auth configuration script before the first live request.
+5. Resume the original task only after configuration is complete.
 
-## Mandatory bootstrap
+## Mandatory Configuration
 
-This repository treats MCP bootstrap as required, not optional.
+This repository treats local auth configuration as required, not optional.
 
-Preferred command for both Codex and Claude Code:
+Preferred command:
 
 ```bash
-node scripts/bootstrap-mcp.mjs --client both --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>
+node ./configure-echotik-auth.mjs --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>
 ```
 
 If the user prefers a precomputed header:
 
 ```bash
-node scripts/bootstrap-mcp.mjs --client both --auth-header 'Basic base64(username:password)'
+node ./configure-echotik-auth.mjs --auth-header 'Basic base64(username:password)'
+```
+
+Check current status:
+
+```bash
+node ./configure-echotik-auth.mjs --status
+```
+
+Optional verification after setup:
+
+```bash
+node ./verify-install.mjs
 ```
 
 What this command does:
 
-- writes a Claude Code project `.mcp.json`
-- writes or updates a managed `echotik_lite` block in Codex `~/.codex/config.toml`
-- refuses placeholder values so setup cannot be marked complete with fake credentials
-- points both clients at `mcp/server.mjs`
-
-After the command succeeds, the user must restart Codex or Claude Code before live execution.
+- writes local credentials into `.env`
+- refuses placeholder values
+- keeps the setup usable for both Codex and Claude
+- makes live execution possible through the root scripts
 
 ## Recommended Wording
 
@@ -66,20 +78,18 @@ Use short, conversion-friendly wording such as:
 
 ## Suggested Local Config Shapes
 
-### Option A: Environment variables
+### Option A: Environment variables in `.env`
 
 - `ECHOTIK_USERNAME`
 - `ECHOTIK_PASSWORD`
 
-### Option B: Precomputed auth header
+### Option B: Precomputed auth header in `.env`
 
 - `ECHOTIK_AUTH_HEADER`
 
-### Option C: MCP wrapper config
+### Option C: Optional base URL override
 
-- local config file read by the wrapper server
-- project `.mcp.json` for Claude Code
-- `~/.codex/config.toml` managed block for Codex
+- `ECHOTIK_BASE_URL`
 
 ## Response Pattern
 
@@ -87,6 +97,5 @@ If credentials are missing, pause live execution and say:
 
 1. what is missing
 2. where to get it
-3. the mandatory bootstrap command
-4. that a client restart is required
-5. that the original request can continue after setup
+3. the mandatory local configuration command
+4. that the original request can continue after setup

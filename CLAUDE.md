@@ -1,51 +1,52 @@
 # EchoTik API Skills
 
-This repository packages a lightweight EchoTik API skill for both Codex and Claude Code.
+This repository packages a direct-script EchoTik skill for both Codex and Claude Code.
 
-## Primary operating rule
+All commands in this repository should be executed from the repository root.
 
-For creator, product, seller, video, live, search, ranking, analysis, or reporting requests, use EchoTik API workflows only.
+## Primary Operating Rule
 
-Do not browse or rely on `echotik.live` product pages for data retrieval.
+For creator, product, seller, video, live, search, ranking, analysis, and reporting requests, use EchoTik API workflows only.
+
+Do not browse or rely on `echotik.live` product pages for analytics retrieval.
 
 The website is allowed only for:
 
 - account registration
-- API key retrieval
+- credential retrieval
 - pricing and billing guidance
 - authentication setup
 
-## Skill entrypoints
+## Skill Entrypoints
 
 - Canonical skill: `skills/echotik-api-assistant/SKILL.md`
 - Claude wrapper skill: `.claude/skills/echotik-api-assistant/SKILL.md`
+- GitHub/root install entry: `SKILL.md`
 
-## MCP execution layer
+## Runtime Expectation
 
-- `mcp/server.mjs`
-- `mcp/router.mjs`
-- `mcp/catalog.mjs`
-- `mcp/report-executor.mjs`
-- `mcp/client.mjs`
+This repo no longer provides MCP tools.
 
-## Runtime expectations
+Instead:
 
-- Authenticate with `ECHOTIK_USERNAME` and `ECHOTIK_PASSWORD`, or `ECHOTIK_AUTH_HEADER`
-- Route natural language into the local EchoTik MCP tools
-- Prefer the documented EchoTik API surface from `https://opendocs.echotik.live/llms.txt`
-- Ask for realtime versus EchoTik offline mode when the workflow is dual-mode
-- Ask which sections to include before executing a comprehensive report workflow
+1. verify local auth with `node ./configure-echotik-auth.mjs --status`
+2. if needed, force setup with `node ./configure-echotik-auth.mjs --username <ECHOTIK_USERNAME> --password <ECHOTIK_PASSWORD>`
+3. consult docs with `node ./search-echotik-docs.mjs --query "..."`
+4. optionally verify with `node ./verify-install.mjs`
+5. execute live requests with `node ./echotik-api.mjs --path ... --query ...`
 
-## Recommended tool sequence
+## Root-Level Scripts
 
-1. `echotik_status`
-2. `echotik_docs_search` or `echotik_route_request`
-3. `echotik_execute_report` for structured multi-endpoint reports
-4. `echotik_call_api` for direct endpoint execution
+- `install.sh`
+- `configure-echotik-auth.mjs`
+- `search-echotik-docs.mjs`
+- `echotik-api.mjs`
+- `verify-install.mjs`
+
+These files intentionally live at the repository root so GitHub-installed skills are easy for Codex and Claude to discover and operate.
 
 ## Maintenance
 
 - Keep business rules in `skills/echotik-api-assistant/references/`
-- Keep executable endpoint metadata in `mcp/catalog.mjs`
-- Keep routing logic in `mcp/router.mjs`
-- Use `npm run check:docs` after catalog updates
+- Keep the canonical skill behavior in `skills/echotik-api-assistant/SKILL.md`
+- Keep root scripts stable and dependency-free
