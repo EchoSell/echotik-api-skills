@@ -24,8 +24,8 @@ This repository no longer ships any MCP server, MCP config, SDK dependency, or b
 
 This repo is structured so a user can say:
 
-- `帮我安装这个 skills: https://github.com/xxx/xxx`
-- `Install this skill: https://github.com/xxx/xxx`
+- `帮我安装这个 skills: [EchoSell/echotik-api-skills](https://github.com/EchoSell/echotik-api-skills)`
+- `Install this skill: [EchoSell/echotik-api-skills](https://github.com/EchoSell/echotik-api-skills)`
 
 And the AI can discover the root entrypoints immediately.
 
