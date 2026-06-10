@@ -19,8 +19,8 @@ The Codex entrypoint is the main skill. The Claude entrypoint points to the same
 
 Users can install this repository from GitHub with prompts such as:
 
-- `帮我安装这个 skills: [EchoSell/echotik-api-skills](https://github.com/EchoSell/echotik-api-skills)`
-- `Install this skill: [EchoSell/echotik-api-skills](https://github.com/EchoSell/echotik-api-skills)`
+- `帮我安装这个 skills: https://github.com/EchoSell/echotik-api-skills`
+- `Install this skill: https://github.com/EchoSell/echotik-api-skills`
 
 Manual setup:
 
